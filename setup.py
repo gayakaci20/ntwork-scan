@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -10,7 +10,7 @@ setup(
     description="A comprehensive network scanning tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=find_packages(),
+    py_modules=['ntwork_scan'],
     install_requires=[
         'scapy>=2.5.0',
         'python-nmap>=0.7.1',
@@ -18,7 +18,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'ntwork-scan=ntwork-scan:main',
+            'ntwork-scan=ntwork_scan:main',
         ],
     },
     classifiers=[
