@@ -53,28 +53,38 @@ def discover_devices(target_network, scan_type="arp"):
                 response = scapy.IP(dst=str(ip))/scapy.ICMP()
                 ans = scapy.sr1(response, timeout=1, verbose=False)
                 if ans:
-                    devices.append({"ip": str(ip), "mac": "Unknown", "hostname":"Unknown"}) 
+                    arp_req = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")/scapy.ARP(pdst=str(ip))
+                    arp_ans = scapy.srp1(arp_req, timeout=1, verbose=False)
+                    mac = arp_ans[scapy.ARP].hwsrc if arp_ans else "Unknown"
+                    try:
+                        hostname = socket.gethostbyaddr(str(ip))[0]
+                    except socket.herror:
+                        hostname = "Unknown"
+                    devices.append({"ip": str(ip), "mac": mac, "hostname": hostname})
             except Exception as e:
-                print(f"Error pinging {ip}: {e}") 
-                pass
+                print(f"Error scanning {ip}: {e}")
 
     return devices
 
 
 def scan_ports(ip_address, port_range):
-    nm = nmap.PortScanner()
-    nm.scan(ip_address, port_range)
-    open_ports = []
-    for host in nm.all_hosts():
-        if nm[host].state() == 'up':
-            for protocol in nm[host].all_protocols():
-                lport = nm[host][protocol].keys()
-                for port in lport:
-                    if nm[host][protocol][port]['state'] == 'open':
-                        service = nm[host][protocol][port]['name']
-                        version = nm[host][protocol][port].get('version', 'Unknown') 
-                        open_ports.append({"port": port, "protocol": protocol, "service": service, "version": version})
-    return open_ports
+    try:
+        nm = nmap.PortScanner()
+        nm.scan(ip_address, port_range)
+        open_ports = []
+        for host in nm.all_hosts():
+            if nm[host].state() == 'up':
+                for protocol in nm[host].all_protocols():
+                    lport = nm[host][protocol].keys()
+                    for port in lport:
+                        if nm[host][protocol][port]['state'] == 'open':
+                            service = nm[host][protocol][port]['name']
+                            version = nm[host][protocol][port].get('version', 'Unknown') 
+                            open_ports.append({"port": port, "protocol": protocol, "service": service, "version": version})
+        return open_ports
+    except nmap.PortScannerError as e:
+        print(f"Error scanning ports on {ip_address}: {e}")
+        return []
 
 
 def basic_vulnerability_check(open_ports):
@@ -104,61 +114,64 @@ def basic_vulnerability_check(open_ports):
             vulnerabilities.append(common_vulnerabilities[port])
     return vulnerabilities
 
-def generate_report(devices):
+def generate_report(devices, port_range):
     report = []
     for device in devices:
         device_report = device.copy()
-        open_ports = scan_ports(device["ip"], args.port_range)
+        open_ports = scan_ports(device["ip"], port_range)
         device_report["open_ports"] = open_ports
         device_report["vulnerabilities"] = basic_vulnerability_check(open_ports)
         report.append(device_report)
     return report
 
 def save_report(report, output_file, output_format):
-    if output_format == "json":
-        with open(output_file, "w") as f:
-            json.dump(report, f, indent=4)
-    elif output_format == "csv":
-        import csv
-        with open(output_file, "w", newline="") as f:
-            writer = csv.writer(f)
-            # Write headers
-            headers = ["IP", "MAC", "Hostname", "Port", "Protocol", "Service", "Version", "Vulnerability Description", "Severity"]
-            writer.writerow(headers)
-            # Write data
-            for device in report:
-                for port in device.get("open_ports", []):
+    try:
+        if output_format == "json":
+            with open(output_file, "w") as f:
+                json.dump(report, f, indent=4)
+        elif output_format == "csv":
+            import csv
+            with open(output_file, "w", newline="") as f:
+                writer = csv.writer(f)
+                headers = ["IP", "MAC", "Hostname", "Port", "Protocol", "Service", "Version", "Vulnerability Description", "Severity"]
+                writer.writerow(headers)
+                for device in report:
+                    for port in device.get("open_ports", []):
+                        for vuln in device.get("vulnerabilities", []):
+                            writer.writerow([
+                                device["ip"],
+                                device["mac"],
+                                device["hostname"],
+                                port["port"],
+                                port["protocol"],
+                                port["service"],
+                                port["version"],
+                                vuln["description"],
+                                vuln["severity"]
+                            ])
+        elif output_format == "txt":
+            with open(output_file, "w") as f:
+                for device in report:
+                    f.write(f"\nDevice Information:\n")
+                    f.write(f"IP Address: {device['ip']}\n")
+                    f.write(f"MAC Address: {device['mac']}\n")
+                    f.write(f"Hostname: {device['hostname']}\n\n")
+                    
+                    f.write("Open Ports:\n")
+                    for port in device.get("open_ports", []):
+                        f.write(f"  Port {port['port']} ({port['protocol']}):\n")
+                        f.write(f"    Service: {port['service']}\n")
+                        f.write(f"    Version: {port['version']}\n")
+                    
+                    f.write("\nVulnerabilities:\n")
                     for vuln in device.get("vulnerabilities", []):
-                        writer.writerow([
-                            device["ip"],
-                            device["mac"],
-                            device["hostname"],
-                            port["port"],
-                            port["protocol"],
-                            port["service"],
-                            port["version"],
-                            vuln["description"],
-                            vuln["severity"]
-                        ])
-    elif output_format == "txt":
-        with open(output_file, "w") as f:
-            for device in report:
-                f.write(f"\nDevice Information:\n")
-                f.write(f"IP Address: {device['ip']}\n")
-                f.write(f"MAC Address: {device['mac']}\n")
-                f.write(f"Hostname: {device['hostname']}\n\n")
-                
-                f.write("Open Ports:\n")
-                for port in device.get("open_ports", []):
-                    f.write(f"  Port {port['port']} ({port['protocol']}):\n")
-                    f.write(f"    Service: {port['service']}\n")
-                    f.write(f"    Version: {port['version']}\n")
-                
-                f.write("\nVulnerabilities:\n")
-                for vuln in device.get("vulnerabilities", []):
-                    f.write(f"  {vuln['description']}\n")
-                    f.write(f"  Severity: {vuln['severity']}\n\n")
-                f.write("-" * 50 + "\n")
+                        f.write(f"  {vuln['description']}\n")
+                        f.write(f"  Severity: {vuln['severity']}\n\n")
+                    f.write("-" * 50 + "\n")
+    except IOError as e:
+        print(f"Error saving report to {output_file}: {e}")
+        return False
+    return True
 
 if __name__ == "__main__":
     print_banner()
@@ -171,7 +184,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     devices = discover_devices(args.target_network, args.scan_type)
-    report = generate_report(devices)
-    save_report(report, args.output_file, args.output_format)
-
-    print(f"Scan complete. Report saved to {args.output_file}")
+    report = generate_report(devices, args.port_range)
+    if save_report(report, args.output_file, args.output_format):
+        print(f"Scan complete. Report saved to {args.output_file}")
+    else:
+        print("Failed to save report.")
