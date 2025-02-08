@@ -1,68 +1,72 @@
 # 🔍 Network Scanner Tool  
 
-Un outil de **scan réseau** complet permettant de **découvrir les appareils connectés**, **analyser les ports**, et **effectuer des vérifications de vulnérabilités**.  
+A **comprehensive network scanning tool** that allows you to **discover connected devices**, **analyze ports**, and **perform basic vulnerability checks**.  
 
-## ✨ Fonctionnalités  
+## ✨ Features  
 
-✅ **Découverte des appareils** via **ARP** ou **PING scan**  
-✅ **Scan des ports** avec **détection des services** 🔌  
-✅ **Analyse basique des vulnérabilités** 🔒  
-✅ **Génération de rapports JSON** 📄  
+✅ **Device discovery** via **ARP** or **PING scan**  
+✅ **Port scanning** with **service detection** 🔌  
+✅ **Basic vulnerability analysis** 🔒  
+✅ **JSON report generation** 📄  
 
-## 📌 Prérequis  
+## 📌 Prerequisites  
 
-🐍 **Python** 3.6 ou supérieur  
+🐍 **Python** 3.6 or higher  
 🛠️ **nmap** (Network Mapper)  
 
-### 📥 Installation de nmap  
+### 📥 Installing nmap  
 
-- **Ubuntu/Debian** : `sudo apt-get install nmap`  
-- **macOS** : `brew install nmap`  
-- **Windows** : Télécharger depuis [nmap.org](https://nmap.org/download.html)  
+- **Ubuntu/Debian**: `sudo apt-get install nmap`  
+- **macOS**: `brew install nmap`  
+- **Windows**: Download from [nmap.org](https://nmap.org/download.html)  
 
 ## ⚙️ Installation  
 
-1️⃣ **Cloner le repository** 🔽  
+1️⃣ **Clone the repository** 🔽  
 ```bash
-git clone <repository-url>
+git clone https://github.com/gayakaci20/ntwork-scan.git
 cd network-scan
 ```
 
-2️⃣ **Installer le package** 📦  
+2️⃣ **Install the package** 📦  
 ```bash
 pip install .
 ```
-Ou en mode développement :  
+Or in development mode:  
 ```bash
 pip install -e .
 ```
 
-## 🚀 Utilisation  
+## 🚀 Usage  
 
 ```bash
 network-scan -t TARGET [-s SCAN_TYPE] [-p PORT_RANGE] [-o OUTPUT_FILE] [-f FORMAT]
 ```
 
-📌 **Arguments** :  
-- `-t, --target` : **Réseau cible** ou **IP range** (ex: `"192.168.1.0/24"`)  
-- `-s, --scan_type` : **Type de scan** ("arp" ou "ping", **défaut**: "arp")  
-- `-p, --port_range` : **Plage de ports** à scanner (**défaut**: "1-1024")  
-- `-o, --output` : **Fichier de sortie** (**défaut**: "report.json")  
-- `-f, --format` : **Format de sortie** (**actuellement supporté** : "json")  
+📌 **Arguments**:  
+- `-t, --target`: **Target network** or **IP range** (e.g., `"192.168.1.0/24"`)  
+- `-s, --scan_type`: **Scan type** ("arp" or "ping", **default**: "arp")  
+- `-p, --port_range`: **Port range to scan** (**default**: "1-1024")  
+- `-o, --output`: **Output file** (**default**: "report.json")  
+- `-f, --format`: **Output format** (**currently supported**: "json")  
 
-📌 **Exemple** :  
+📌 **Example**:  
 ```bash
 network-scan -t 192.168.1.0/24 -s arp -p 1-100 -o network_scan.json
 ```
 
-## ⚠️ Remarque  
+## ⚠️ Important Notes  
 
-Certaines fonctionnalités nécessitent **les privilèges root/administrateur** :  
-🔹 **Scan ARP**  
-🔹 **Scan PING**  
-🔹 **Scan des ports**  
+Some features require **root/administrator privileges**:  
+🔹 **ARP scanning**  
+🔹 **PING scanning**  
+🔹 **Port scanning**  
 
-💡 **Exécuter avec sudo/administrateur si nécessaire** :  
+💡 **Run with sudo/administrator privileges if needed**:  
 ```bash
 sudo network-scan -t 192.168.1.0/24
 ```
+
+## 📜 License  
+
+📝 **MIT License** - Open-source project, free to use and modify.
